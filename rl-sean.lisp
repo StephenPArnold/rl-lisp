@@ -1,3 +1,4 @@
+;; testing to see if i can commit this comment
 (defun random-elt (sequence)
   "Returns a random element from a sequence"
   (elt sequence (random (length sequence))))
