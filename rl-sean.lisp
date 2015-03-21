@@ -1,3 +1,4 @@
+(setf *random-state* (make-random-state t))
 ;; testing to see if i can commit this comment
 (defun dprint (some-variable &optional (additional-message '()))
 	"Debug Print - useful for allowing error/status messages
@@ -54,10 +55,27 @@ else val is returned instead when there's a tie. If state is outside the range, 
   *basic-alpha*)
 
   
-(defun q-learner (q-table reward current-state action next-state gamma alpha-func iteration)
+(defun q-learner (q-table reward old-state action current-state gamma alpha-func iteration)
   "Modifies the q-table and returns it.  alpha-func is a function which must be called
 to provide the current alpha value."
+  (if (< current-state 0)
+	(setf current-state 0)
+	nil
+  )
   (dprint reward "you canned q-learner with reward as:")
+  ;;equation is (qtable[oldstate][action] = (1-alpha) * qtable[oldstate][action] + alpha*(reward + gamma* (max-q q-table current-state) )
+  (setf alpha (funcall alpha-func iteration))
+
+  (setf minus-alpha (- 1 alpha))
+
+  (setf the-max-action-q (max-q q-table current-state))
+ 
+  (setf first-half-eq (* minus-alpha (aref q-table old-state action)))
+
+  (setf second-half-eq (* alpha (+ reward (* gamma the-max-action-q))))
+  
+  (setf (aref q-table old-state action) (+ first-half-eq second-half-eq))
+  
   q-table
   ;;; IMPLEMENT ME
 )
@@ -154,6 +172,7 @@ them wins.  Reports the winner."
   
 (defun best-actions (q-table)
   "Returns a list of the best actions.  If there is no best action, this is indicated with a hyphen (-)"
+  ()
   ;; hint: see optional value in max-action function
 
   ;;; IMPLEMENT ME
