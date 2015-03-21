@@ -1,4 +1,13 @@
 ;; testing to see if i can commit this comment
+(defun dprint (some-variable &optional (additional-message '()))
+	"Debug Print - useful for allowing error/status messages
+to be printed while debug=t."
+	(if *debug*
+		(progn 
+			(if additional-message (print additional-message) nil) 
+			(print some-variable))
+		some-variable))
+
 (defun random-elt (sequence)
   "Returns a random element from a sequence"
   (elt sequence (random (length sequence))))
@@ -22,6 +31,7 @@ If the state is outside the range, then utility-for-outside-state-range is retur
 	 (best (aref q-table state (1- num-actions))))  ;; q of last action
     (dotimes (action (1- num-actions) best)  ;; all but last action...
       (setf best (max (aref q-table state action) best)))))
+	  
 
 (defun max-action (q-table state &optional val)
   "Returns the action which provided the highest q-value.  If val is not provided, ties are broken at random;
@@ -43,11 +53,12 @@ else val is returned instead when there's a tie. If state is outside the range, 
   (declare (ignore iteration)) ;; quiets compiler complaints
   *basic-alpha*)
 
-
+  
 (defun q-learner (q-table reward current-state action next-state gamma alpha-func iteration)
   "Modifies the q-table and returns it.  alpha-func is a function which must be called
 to provide the current alpha value."
-
+  (dprint reward "you canned q-learner with reward as:")
+  q-table
   ;;; IMPLEMENT ME
 )
 
@@ -70,8 +81,50 @@ to provide the current alpha value."
 
 (defun learn-nim (heap-size gamma alpha-func num-iterations)
   "Returns a q-table after learning how to play nim"
+ 
+  ;;make q table, ignore sean only do size 20.
+  (let ((q-table (make-q-table (+ heap-size 1) 3)))
+  
+  ;;loop 1 to iterations
+	(dotimes (i num-iterations)
+		;;set state to heap-size
+		(let ((current-state heap-size) (old-state 0))
+			;;loop until game finished
+			(setf current-state heap-size)
+			(loop while (> current-state 0) do
+				(dprint current-state "current state is:")
+				;;before taking an action, record current state for later use
+				(setf old-state current-state)
+				;;take an action (call max-action state)
+				(setf action-taken  (max-action q-table current-state) )
+				(dprint action-taken "action taken:")
+				
+				;; calculate current state (modify current-state)
+				(setf current-state (- (- current-state action-taken) 1))
+				
+				;;check to see if you've lost, if so then do a losing-update
+				;;(defun q-learner (q-table reward current-state action next-state gamma alpha-func iteration)
 
-  ;;; IMPLEMENT ME
+				(if (<= current-state 0)
+					(setf q-table (q-learner q-table -1 old-state action-taken current-state gamma alpha-func i));;losing update
+					(progn
+						;;else we continue on, let the "opponent" make a move
+						;;take an action (call max-action state)
+						(setf action-taken  (max-action q-table current-state) )
+						(dprint action-taken "action taken:")
+				
+						;; calculate current state (modify current-state)
+						(setf current-state (- (- current-state action-taken) 1))
+						
+				
+						;;check if the opponent lost, if so then do a winning-update
+						(if (<= current-state 0)
+							(setf q-table (q-learner q-table 1 old-state action-taken current-state gamma alpha-func i));;losing update
+							;;if not the game is still going, learn from future rewards!
+							(setf q-table (q-learner q-table 0 old-state action-taken current-state gamma alpha-func i));;future rewards update
+						)
+						;;else do a regular old update.
+				))))))
   )
 
 
@@ -122,3 +175,18 @@ them wins.  Reports the winner."
 ;; (play-nim *my-q-table* 22)   ;; need to provide the original heap size
 ;;
 ;; You might try changing to some other function than #'basic-alpha...
+
+
+(defun test-max-action ()
+	(let ((qtable (make-q-table 2 2)))
+		(setf (aref qtable 0 1) 1)
+		(setf (aref qtable 1 0) 10)
+		(print (max-action qtable 0))
+	)
+)  
+
+(setf *debug* t)
+(print "max-action is:")
+(test-max-action)
+
+(learn-nim 5 .1 #'basic-alpha 3)
