@@ -1,4 +1,14 @@
-;; testing to see if i can commit this comment
+;;; FUNCTION DICTIONARY
+;;
+;;
+;;
+
+
+
+
+
+
+
 (defun random-elt (sequence)
   "Returns a random element from a sequence"
   (elt sequence (random (length sequence))))
@@ -122,3 +132,5 @@ them wins.  Reports the winner."
 ;; (play-nim *my-q-table* 22)   ;; need to provide the original heap size
 ;;
 ;; You might try changing to some other function than #'basic-alpha...
+
+(make-q-table 30 3)
