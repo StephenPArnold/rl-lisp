@@ -1,3 +1,15 @@
+
+
+;;; FUNCTION DICTIONARY
+;;
+;;
+;;
+
+
+
+
+
+
 (setf *random-state* (make-random-state t))
 ;; testing to see if i can commit this comment
 (defun dprint (some-variable &optional (additional-message '()))
