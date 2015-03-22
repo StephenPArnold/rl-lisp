@@ -126,35 +126,36 @@ to provide the current alpha value."
 				;;before taking an action, record current state for later use
 				(setf old-state current-state)
 				;;take an action (call max-action state)
-				(setf action-taken  (max-action q-table current-state) )
-				(dprint action-taken "action taken:")
+				(setf my-action-taken  (max-action q-table current-state) )
+				(dprint my-action-taken "action taken:")
 				
 				;; calculate current state (modify current-state)
-				(setf current-state (- (- current-state action-taken) 1))
+				(setf current-state (- (- current-state my-action-taken) 1))
 				
 				;;check to see if you've lost, if so then do a losing-update
 				;;(defun q-learner (q-table reward current-state action next-state gamma alpha-func iteration)
 
 				(if (<= current-state 0)
-					(setf q-table (q-learner q-table -1 old-state action-taken current-state gamma alpha-func i));;losing update
+					(setf q-table (q-learner q-table -1 old-state my-action-taken current-state gamma alpha-func i));;losing update
 					(progn
 						;;else we continue on, let the "opponent" make a move
 						;;take an action (call max-action state)
-						(setf action-taken  (max-action q-table current-state) )
-						(dprint action-taken "action taken:")
+						(setf opp-action-taken  (max-action q-table current-state) )
+						(dprint opp-action-taken "action taken:")
 				
 						;; calculate current state (modify current-state)
-						(setf current-state (- (- current-state action-taken) 1))
+						(setf current-state (- (- current-state opp-action-taken) 1))
 						
 				
 						;;check if the opponent lost, if so then do a winning-update
 						(if (<= current-state 0)
-							(setf q-table (q-learner q-table 1 old-state action-taken current-state gamma alpha-func i));;losing update
+							(setf q-table (q-learner q-table 1 old-state my-action-taken current-state gamma alpha-func i));;losing update
 							;;if not the game is still going, learn from future rewards!
-							(setf q-table (q-learner q-table 0 old-state action-taken current-state gamma alpha-func i));;future rewards update
+							(setf q-table (q-learner q-table 0 old-state my-action-taken current-state gamma alpha-func i));;future rewards update
 						)
 						;;else do a regular old update.
-				))))))
+				)))))
+				q-table)
   )
 
 
@@ -184,12 +185,22 @@ them wins.  Reports the winner."
   
 (defun best-actions (q-table)
   "Returns a list of the best actions.  If there is no best action, this is indicated with a hyphen (-)"
-  ()
-  ;; hint: see optional value in max-action function
+	(let ((action-list '()))  
+	  (dotimes (i (num-states q-table))
+		(setf max-action (+ (max-action q-table i 1000) 1))
+		(if (< (max-q q-table i) 0)
+			(setf max-action (* -1 max-action))
+			nil)
+			
+		(setf action-list (append action-list (list max-action)))
+		
+	  )
+	;; hint: see optional value in max-action function
 
-  ;;; IMPLEMENT ME
-  )
-
+		;;; IMPLEMENT ME
+	  action-list
+	)
+)
 
   
 
@@ -216,8 +227,10 @@ them wins.  Reports the winner."
 	)
 )  
 
-(setf *debug* t)
+(setf *debug* nil)
 (print "max-action is:")
 (test-max-action)
 
-(learn-nim 5 .1 #'basic-alpha 3)
+(setf *q-table* (learn-nim 200 .5 #'basic-alpha 1000000))
+(print *q-table*)
+(print (best-actions *q-table*))
