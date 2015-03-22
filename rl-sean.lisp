@@ -5,11 +5,6 @@
 ;;
 ;;
 
-
-
-
-
-
 (setf *random-state* (make-random-state t))
 ;; testing to see if i can commit this comment
 (defun dprint (some-variable &optional (additional-message '()))
@@ -64,7 +59,7 @@ else val is returned instead when there's a tie. If state is outside the range, 
 (defparameter *basic-alpha* 0.5 "A simple alpha constant")
 (defun basic-alpha (iteration)
   (declare (ignore iteration)) ;; quiets compiler complaints
-  *basic-alpha*)
+  (if (< iteration 1000) 0 *basic-alpha*))
 
   
 (defun q-learner (q-table reward old-state action current-state gamma alpha-func iteration)
@@ -76,6 +71,7 @@ to provide the current alpha value."
   )
   (dprint reward "you canned q-learner with reward as:")
   ;;equation is (qtable[oldstate][action] = (1-alpha) * qtable[oldstate][action] + alpha*(reward + gamma* (max-q q-table current-state) )
+  
   (setf alpha (funcall alpha-func iteration))
 
   (setf minus-alpha (- 1 alpha))
@@ -115,7 +111,7 @@ to provide the current alpha value."
   ;;make q table, ignore sean only do size 20.
   (let ((q-table (make-q-table (+ heap-size 1) 3)))
   
-  ;;loop 1 to iterations
+    ;;loop 1 to iterations
 	(dotimes (i num-iterations)
 		;;set state to heap-size
 		(let ((current-state heap-size) (old-state 0))
@@ -178,8 +174,19 @@ to provide the current alpha value."
   "Plays a game of nim.  Asks if the user wants to play first,
 then has the user play back and forth with the game until one of
 them wins.  Reports the winner."
-
-  ;;; IMPLEMENT ME
+	(let ((current-state heap-size) (old-state 0))
+			;;loop until game finished
+			(setf current-state heap-size)
+			(loop while (> current-state 0) do
+				(setf my-action-taken  (max-action q-table current-state) )
+				(dprint my-action-taken "action taken:")
+				
+				;; calculate current state (modify current-state)
+				(setf current-state (- (- current-state my-action-taken) 1))
+				(print "number of sticks left after computer move:")
+				(print current-state)
+				(setf current-state (- current-state (make-user-move)))
+			))
   )
 
   
@@ -223,14 +230,13 @@ them wins.  Reports the winner."
 	(let ((qtable (make-q-table 2 2)))
 		(setf (aref qtable 0 1) 1)
 		(setf (aref qtable 1 0) 10)
-		(print (max-action qtable 0))
-	)
-)  
+		(print (max-action qtable 0))))
 
 (setf *debug* nil)
 (print "max-action is:")
 (test-max-action)
 
-(setf *q-table* (learn-nim 200 .5 #'basic-alpha 1000000))
+(setf *q-table* (learn-nim 20 .5 #'basic-alpha 400000))
 (print *q-table*)
 (print (best-actions *q-table*))
+(play-nim *q-table* 17)
