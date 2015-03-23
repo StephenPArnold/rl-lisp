@@ -154,7 +154,9 @@ to provide the current alpha value."
 				q-table)
   )
 
-
+(defun would-you-like-to-play ()
+	"Returns true if the user wants to play a game of NIM"
+	(y-or-n-p "Would you like to play a new game of NIM?"))
 
 (defun ask-if-user-goes-first ()
   "Returns true if the user wants to go first"
@@ -164,30 +166,33 @@ to provide the current alpha value."
   "Returns the number of sticks the user wants to remove"
   (let ((result))
     (loop
-     (format t "~%Take how many sticks?  ")
+     (format t "~%How many sticks would you like to take?  ")
      (setf result (read))
      (when (and (numberp result) (<= result 3) (>= result 1))
        (return result))
-     (format t "~%Answer must be between 1 and 3"))))
+     (format t "~%Please select no fewer than 1 and no more than 3"))))
 
-(defun play-nim (q-table heap-size)
+(defun play-nim (q-table max-heap-size)
   "Plays a game of nim.  Asks if the user wants to play first,
 then has the user play back and forth with the game until one of
 them wins.  Reports the winner."
-	(let ((current-state heap-size) (old-state 0))
-			;;loop until game finished
-			(setf current-state heap-size)
-			(loop while (> current-state 0) do
-				(setf my-action-taken  (max-action q-table current-state) )
-				(dprint my-action-taken "action taken:")
+	(let ((current-state max-heap-size) (old-state 0))
+			;;loop until user quits
+			(loop while (would-you-like-to-play) do 
+				(setf current-state (random max-heap-size))
+				(format t  "~%Starting with ~A sticks.~%" current-state)
+				;;loop until game finished
+			  (loop while (> current-state 0) do
+				  (setf my-action-taken  (max-action q-table current-state) )
+				  (dprint my-action-taken "action taken:")
 				
-				;; calculate current state (modify current-state)
-				(setf current-state (- (- current-state my-action-taken) 1))
-				(print "number of sticks left after computer move:")
-				(print current-state)
-				(setf current-state (- current-state (make-user-move)))
-			))
-  )
+				  ;; calculate current state (modify current-state)
+				  (setf current-state (- (- current-state my-action-taken) 1))
+				  (print "number of sticks left after computer move:")
+				  (print current-state)
+				  (setf current-state (- current-state (make-user-move)))
+				)))
+)
 
   
 (defun best-actions (q-table)
@@ -205,7 +210,7 @@ them wins.  Reports the winner."
 	;; hint: see optional value in max-action function
 
 		;;; IMPLEMENT ME
-	  action-list
+	  ;;action-list
 	)
 )
 
@@ -236,7 +241,7 @@ them wins.  Reports the winner."
 (print "max-action is:")
 (test-max-action)
 
-(setf *q-table* (learn-nim 20 .5 #'basic-alpha 400000))
+(setf *q-table* (learn-nim 100 .5 #'basic-alpha 50000))
 (print *q-table*)
 (print (best-actions *q-table*))
-(play-nim *q-table* 17)
+(play-nim *q-table* 100)
