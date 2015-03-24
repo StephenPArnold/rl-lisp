@@ -166,7 +166,6 @@ to provide the current alpha value."
   "Returns the number of sticks the user wants to remove"
   (let ((result))
     (loop
-     (format t "~%How many sticks would you like to take?  ")
      (setf result (read))
      (when (and (numberp result) (<= result 3) (>= result 1))
        (return result))
@@ -180,17 +179,18 @@ them wins.  Reports the winner."
 			;;loop until user quits
 			(loop while (would-you-like-to-play) do 
 				(setf current-state (random max-heap-size))
-				(format t  "~%Starting with ~A sticks.~%" current-state)
+				(format t  "~%~%~%Starting with ~A sticks.~%" current-state)
 				;;loop until game finished
 			  (loop while (> current-state 0) do
 				  (setf my-action-taken  (max-action q-table current-state) )
-				  (dprint my-action-taken "action taken:")
-				
+				  ;;(dprint my-action-taken "action taken:")
+				  (format t "~%Computer took ~A sticks." (1+ my-action-taken))
 				  ;; calculate current state (modify current-state)
 				  (setf current-state (- (- current-state my-action-taken) 1))
-				  (print "number of sticks left after computer move:")
-				  (print current-state)
-				  (setf current-state (- current-state (make-user-move)))
+				  (format t "~%Number of sticks in the pile after computer move: ~A" current-state)
+					;; The following line WILL NOT PRINT until AFTER the return from'make-user-move'
+					(format t "~%How many sticks would you like to take? ")
+					(setf current-state (- current-state (make-user-move)))
 				)))
 )
 
@@ -210,7 +210,7 @@ them wins.  Reports the winner."
 	;; hint: see optional value in max-action function
 
 		;;; IMPLEMENT ME
-	  ;;action-list
+	  action-list
 	)
 )
 
@@ -238,10 +238,10 @@ them wins.  Reports the winner."
 		(print (max-action qtable 0))))
 
 (setf *debug* nil)
-(print "max-action is:")
+;;(print "max-action is:")
 (test-max-action)
 
 (setf *q-table* (learn-nim 100 .5 #'basic-alpha 50000))
-(print *q-table*)
-(print (best-actions *q-table*))
+;;(print *q-table*)
+;;(print (best-actions *q-table*))
 (play-nim *q-table* 100)
