@@ -161,8 +161,7 @@ to provide the current alpha value."
 						)
 						;;else do a regular old update.
 				)))))
-				q-table)
-  )
+				q-table))
 
 (defun would-you-like-to-play ()
 	"Returns true if the user wants to play a game of NIM"
