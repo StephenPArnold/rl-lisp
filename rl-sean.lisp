@@ -171,21 +171,21 @@ to provide the current alpha value."
 (defun ask-if-user-goes-first ()
   "Returns true if the user wants to go first"
   (y-or-n-p "Do you want to play first?"))
-  
+ 
 (defun make-user-move ()
   "Returns the number of sticks the user wants to remove"
   (let ((result))
     (loop
-     (setf result (read))
-     (when (and (numberp result) (<= result 3) (>= result 1))
-       (return result))
-     (format t "~%Please select no fewer than 1 and no more than 3"))))
+			(setf result (read))
+     	(when (and (numberp result) (<= result 3) (>= result 1))
+      	 (return result))
+     	(format t "~%Please select no fewer than 1 and no more than 3! ~%How many sticks would you like to take?~%"))))
 
 (defun play-nim (q-table max-heap-size)
   "Plays a game of nim.  Asks if the user wants to play first,
 then has the user play back and forth with the game until one of
 them wins.  Reports the winner."
-	(let ((current-state max-heap-size) (old-state 0))
+	(let ((current-state max-heap-size) (old-state 0) (user-move 0))
 			;;loop until user quits
 			(print max-heap-size)
 			 (loop while (would-you-like-to-play) do 
@@ -193,16 +193,18 @@ them wins.  Reports the winner."
 				(format t  "~%~%~%Starting with ~A sticks.~%" current-state)
 				;;loop until game finished
 			  (loop while (> current-state 0) do
-				  (setf my-action-taken  (max-action q-table current-state) )
+				  (progn 
+						(setf my-action-taken  (max-action q-table current-state) )
 				  ;;(dprint my-action-taken "action taken:")
 				  (format t "~%Computer took ~A sticks." (1+ my-action-taken))
 				  ;; calculate current state (modify current-state)
 				  (setf current-state (- (- current-state my-action-taken) 1))
-				  (format t "~%Number of sticks in the pile after computer move: ~A" current-state)
-					;; The following line WILL NOT PRINT until AFTER the return from'make-user-move'
-					(format t "~%How many sticks would you like to take? ")
-					(setf current-state (- current-state (make-user-move)))
-				))))
+					(if (< current-state 1) (format t "~%YOU WIN!!!~%") (progn 
+				  	(format t "~%Number of sticks in the pile after computer move: ~A ~%How many sticks would you like to take?~% " current-state)
+						(setf current-state (- current-state (make-user-move)))
+						(format t "~%~A~%" current-state)
+						(if (< current-state 1) (format t "~%YOU LOSE!!!~%") nil)))
+				)))))
 
   
 (defun best-actions (q-table)
@@ -250,7 +252,7 @@ them wins.  Reports the winner."
 (defun base-assignment ()
 
 	(setf gamma .5)
-	(setf *q-table* (learn-nim 22 .1 #'basic-alpha 50000))
+	(setf *q-table* (learn-nim 22 .1 #'basic-alpha 50))
 	(print (best-actions *q-table*))
 	(play-nim *q-table* 22))
 
