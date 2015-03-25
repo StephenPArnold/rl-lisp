@@ -4,7 +4,7 @@
 ;;
 ;;
 ;;
-
+(setf *debug* nil)
 (setf *random-state* (make-random-state t))
 ;; testing to see if i can commit this comment
 (defun dprint (some-variable &optional (additional-message '()))
@@ -59,7 +59,7 @@ else val is returned instead when there's a tie. If state is outside the range, 
 (defparameter *basic-alpha* 0.5 "A simple alpha constant")
 (defun basic-alpha (iteration)
   (declare (ignore iteration)) ;; quiets compiler complaints
-  (if (< iteration 1000) 0 *basic-alpha*))
+  *basic-alpha*)
 
   
 (defun q-learner (q-table reward old-state action current-state gamma alpha-func iteration)
@@ -124,7 +124,16 @@ to provide the current alpha value."
 				;;take an action (call max-action state)
 				(setf my-action-taken  (max-action q-table current-state) )
 				(dprint my-action-taken "action taken:")
-				
+			
+				;;randomly do something a bit different
+				(if (and (< i 20000) (=  (random 10) 0))
+					;; do something other than optimal
+					(if (= (random 2) 0)
+						(setf my-action-taken (- my-action-taken 1))
+						(setf my-action-taken (+ my-action-taken 1)))
+					nil)
+				(setf my-action-taken (mod my-action-taken 3))
+	
 				;; calculate current state (modify current-state)
 				(setf current-state (- (- current-state my-action-taken) 1))
 				
@@ -132,6 +141,7 @@ to provide the current alpha value."
 				;;(defun q-learner (q-table reward current-state action next-state gamma alpha-func iteration)
 
 				(if (<= current-state 0)
+					
 					(setf q-table (q-learner q-table -1 old-state my-action-taken current-state gamma alpha-func i));;losing update
 					(progn
 						;;else we continue on, let the "opponent" make a move
@@ -145,7 +155,7 @@ to provide the current alpha value."
 				
 						;;check if the opponent lost, if so then do a winning-update
 						(if (<= current-state 0)
-							(setf q-table (q-learner q-table 1 old-state my-action-taken current-state gamma alpha-func i));;losing update
+							(progn (if (< (- old-state current-state) 2) (print (- old-state current-state)) nil)  (setf q-table (q-learner q-table 1 old-state my-action-taken current-state gamma alpha-func i)) );;winning update
 							;;if not the game is still going, learn from future rewards!
 							(setf q-table (q-learner q-table 0 old-state my-action-taken current-state gamma alpha-func i));;future rewards update
 						)
@@ -177,8 +187,9 @@ then has the user play back and forth with the game until one of
 them wins.  Reports the winner."
 	(let ((current-state max-heap-size) (old-state 0))
 			;;loop until user quits
-			(loop while (would-you-like-to-play) do 
-				(setf current-state (random max-heap-size))
+			(print max-heap-size)
+			 (loop while (would-you-like-to-play) do 
+				(setf current-state max-heap-size)
 				(format t  "~%~%~%Starting with ~A sticks.~%" current-state)
 				;;loop until game finished
 			  (loop while (> current-state 0) do
@@ -191,57 +202,59 @@ them wins.  Reports the winner."
 					;; The following line WILL NOT PRINT until AFTER the return from'make-user-move'
 					(format t "~%How many sticks would you like to take? ")
 					(setf current-state (- current-state (make-user-move)))
-				)))
-)
+				))))
 
   
 (defun best-actions (q-table)
-  "Returns a list of the best actions.  If there is no best action, this is indicated with a hyphen (-)"
+  "Returns a list of the best actions.  If there is no best action, this is indicated with a hyphen (-) NOTE: our assignment starts from state 0 to state n, where n is the number of sticks"
 	(let ((action-list '()))  
 	  (dotimes (i (num-states q-table))
 		(setf max-action (+ (max-action q-table i 1000) 1))
-		(if (< (max-q q-table i) 0)
-			(setf max-action (* -1 max-action))
-			nil)
-			
-		(setf action-list (append action-list (list max-action)))
 		
-	  )
-	;; hint: see optional value in max-action function
-
-		;;; IMPLEMENT ME
-	  action-list
-	)
-)
+		(if (> max-action 4)
+			(setf max-action '-)
+			nil)
+		(if  (< (max-q q-table i) 0)
+			(setf max-action '-)
+			nil)
+		(setf action-list (append action-list (list max-action))))
+	  action-list))
 
   
 
 ;; example:
 ;; 
-;; (setq *my-q-table* (learn-nim 22 0.1 #'basic-alpha 50000))
+;;(setq *my-q-table* (learn-nim 22 0.1 #'basic-alpha 50000))
 ;;
 ;; to get the policy from this table:
 ;;
-;; (best-actions *my-q-table*)
+;;(best-actions *my-q-table*)
 ;;
 ;; to play a game of your brain versus this q-table:
 ;;
-;; (play-nim *my-q-table* 22)   ;; need to provide the original heap size
+;;(play-nim *my-q-table* 22)   ;; need to provide the original heap size
 ;;
 ;; You might try changing to some other function than #'basic-alpha...
 
+#|
 
+|#
 (defun test-max-action ()
 	(let ((qtable (make-q-table 2 2)))
 		(setf (aref qtable 0 1) 1)
 		(setf (aref qtable 1 0) 10)
 		(print (max-action qtable 0))))
 
-(setf *debug* nil)
-;;(print "max-action is:")
-(test-max-action)
+;;(setf *debug* nil)
+(setf gamma .0)	
+(defun base-assignment ()
 
-(setf *q-table* (learn-nim 100 .5 #'basic-alpha 50000))
-;;(print *q-table*)
-;;(print (best-actions *q-table*))
-(play-nim *q-table* 100)
+	(setf gamma .5)
+	(dotimes (i 100)
+	(setf *q-table* (learn-nim 22 .1 #'basic-alpha 50000))
+	(print (best-actions *q-table*))
+	)
+	(play-nim *q-table* 22))
+
+
+(base-assignment)
