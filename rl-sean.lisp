@@ -126,7 +126,7 @@ to provide the current alpha value."
 				(dprint my-action-taken "action taken:")
 			
 				;;randomly do something a bit different
-				(if (and (< i 20000) (=  (random 10) 0))
+				(if  (=  (random 2) 0)
 					;; do something other than optimal
 					(if (= (random 2) 0)
 						(setf my-action-taken (- my-action-taken 1))
@@ -247,11 +247,9 @@ them wins.  Reports the winner."
 		(print (max-action qtable 0))))
 
 ;;(setf *debug* nil)
-(setf gamma .0)	
 (defun base-assignment ()
 
-	(setf gamma .5)
-	(setf *q-table* (learn-nim 22 .1 #'basic-alpha 50))
+	(setf *q-table* (learn-nim 22 .1 #'basic-alpha 450))
 	(print (best-actions *q-table*))
 	(play-nim *q-table* 22))
 
