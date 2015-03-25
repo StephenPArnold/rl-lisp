@@ -250,10 +250,8 @@ them wins.  Reports the winner."
 (defun base-assignment ()
 
 	(setf gamma .5)
-	(dotimes (i 100)
 	(setf *q-table* (learn-nim 22 .1 #'basic-alpha 50000))
 	(print (best-actions *q-table*))
-	)
 	(play-nim *q-table* 22))
 
 
