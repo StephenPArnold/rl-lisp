@@ -218,7 +218,7 @@ them wins.  Reports the winner."
   "Returns a q-table after learning how to play nim"
    
   ;;make q table, ignore sean only do size 20.
-  (let ((num-iterations 1)(q-table (make-q-table (+ (* (+ (first heap-sizes) 1) (+ (second heap-sizes) 1) (+ (third heap-sizes) 1))  1) 9)))
+  (let ((num-iterations 1))
   
     ;;loop 1 to iterations
 	(dotimes (i num-iterations)
@@ -232,17 +232,18 @@ them wins.  Reports the winner."
 				;;before taking an action, record current state for later use
 				(setf old-state current-state)
 				;;take an action (call max-action state)
-				(setf my-action-taken  (max-action q-table current-state) )
+				(setf my-action-taken   (max-action q-table current-state)  )
 				(dprint my-action-taken "action taken:")
 				
 				;;randomly do something a bit different
 
-				(setf my-action-taken (mod my-action-taken 9))
-	
+				(print "doing action #")
+				(print my-action-taken)	
 				;; calculate current state (modify current-state)
-				;;(setf current-state (- (- current-state my-action-taken) 1))
+				(setf *debug* t)
 				(dprint current-state "current-state passing in")
 				(dprint heap-sizes "heap-sizes passing in") 
+				(setf *debug* nil)
 				(setf current-state (calculate-new-state current-state my-action-taken heap-sizes))
 				;;check to see if you've lost, if so then do a losing-update
 				(if (<= current-state 0)
@@ -299,8 +300,10 @@ them wins.  Reports the winner."
 		(if  (<= (max-q q-table i) 0)
 			(setf max-action '-)
 			nil)
-		(setf action-list (append action-list (list max-action))))
-	  action-list)) 
+		(setf action-list (append action-list (list (list i (list (calculate-3d-from-1d i '(3 3 3)))  max-action)))))
+	;;	(setf action-list (append action-list (list  max-action))))
+	
+	   action-list)) 
 
 ;; example:
 ;; 
@@ -329,64 +332,40 @@ them wins.  Reports the winner."
 )
 ;;1d->3d->1d (get in state, convert to heap sizes, apply action, return converted state number)
 (defun calculate-new-state (current-state action max-heap-sizes)
-	(setf max-heap-sizes (copy-list max-heap-sizes))
-	(incf (first max-heap-sizes))
-	(incf (second max-heap-sizes))
-	(incf (third max-heap-sizes))
-	(let ((counter 0) (stack-num (floor action 3)) (heap-numbers '(0 0 0)))
-		(dprint "current state is:")
-		(dprint current-state)
-		(setf  (third heap-numbers) (floor current-state (* (first max-heap-sizes) (second max-heap-sizes))))
-		
-		(setf current-state (- current-state (* (floor current-state (* (first max-heap-sizes) (second max-heap-sizes))) (* (first max-heap-sizes) (second max-heap-sizes)))))
-		(dprint "after doing the third dimesion current -state is now")
-		(dprint current-state)
-		(dprint "here's the amount we subtract")
-		(dprint (* (first max-heap-sizes) (second max-heap-sizes)))
-		(setf (second heap-numbers) (floor current-state (first max-heap-sizes)))
+	(let ((bin-number (floor action 3))  (old-3d-state '(0 0 0)) (new-1d-state 0) (new-3d-state '(0 0 0)))
+		(setf old-3d-state (calculate-3d-from-1d current-state max-heap-sizes))
+		(setf new-3d-state (copy-list old-3d-state))
+		(if (> (nth bin-number  old-3d-state) 0)
+			(progn
+				(setf (nth bin-number new-3d-state) (- (nth bin-number old-3d-state) (+ (mod action 3) 1)))
+				(if (< (nth bin-number new-3d-state) 0);; if you took to many i'll forgive you
+					(setf (nth bin-number new-3d-state) 0)
+					0;;doesnt really mean anyhing
+				)
+			(get-state-from-stacks max-heap-sizes new-3d-state))
+			0;; does mean something, if you choose to try to empty a bin that has no blocks, you lose, i wont forgive that mistake.
+	)))
 
-		(setf current-state (- current-state (* (floor current-state (first max-heap-sizes)) (first max-heap-sizes))))
-		(dprint "after the second subtract, current state is")
-		(dprint current-state)
-		(setf (first heap-numbers) current-state)
-		;;this is absoulutely terrible lisp or even code in general. 
-		;; our goal is that if the action was invalid, we hve some rational way of choosing a new stack, this stack to pick from will be 
-		;; the left most non-empty, with wrap-around
-		(loop while (or (< counter 3) (<= (nth stack-num heap-numbers) 0)) do (progn 
-			(setf stack-num (mod (- stack-num 1) 3))
-			(incf counter)
-		))
-		
-		(setf (nth stack-num heap-numbers) (- (nth stack-num heap-numbers) (+ (mod action 3) 1))) 
-		(if (< (nth stack-num heap-numbers) 0)
-			(setf (nth stack-num heap-numbers) 0)
-			nil)
-		;;our returned value
-		(get-state-from-stacks (list (decf (first max-heap-sizes)) (decf (second max-heap-sizes)) (decf (third max-heap-sizes))) heap-numbers)))
 ;;returns the stacks given the state and max heap sizes
 (defun calculate-3d-from-1d (current-state max-heap-sizes)
 	(setf max-heap-sizes (copy-list max-heap-sizes))
 	(incf (first max-heap-sizes))
 	(incf (second max-heap-sizes))
 	(incf (third max-heap-sizes))
-	(let ((counter 0) (heap-numbers '(0 0 0)))
-		(dprint "current state is:")
-		(dprint current-state)
-		(setf  (third heap-numbers) (floor current-state (* (first max-heap-sizes) (second max-heap-sizes))))
-		
-		(setf current-state (- current-state (* (floor current-state (* (first max-heap-sizes) (second max-heap-sizes))) (* (first max-heap-sizes) (second max-heap-sizes)))))
-		(dprint "after doing the third dimesion current -state is now")
-		(dprint current-state)
-		(dprint "here's the amount we subtract")
-		(dprint (* (first max-heap-sizes) (second max-heap-sizes)))
-		(setf (second heap-numbers) (floor current-state (first max-heap-sizes)))
-
-		(setf current-state (- current-state (* (floor current-state (first max-heap-sizes)) (first max-heap-sizes))))
-		(dprint "after the second subtract, current state is")
-		(dprint current-state)
-		(setf (first heap-numbers) current-state)
-		(print "resulting heap-numbers")
-		(print heap-numbers)))
+	(let ((num-sticks 0) (new-3d-state '(0 0 0)))
+		(setf num-sticks (floor current-state (* (third max-heap-sizes) (second max-heap-sizes))))
+		(setf current-state (- current-state (* num-sticks (* (third max-heap-sizes) (second max-heap-sizes)))))
+		(setf (third new-3d-state) num-sticks)
+	
+		(setf num-sticks (floor current-state (second max-heap-sizes)))
+		(setf current-state (- current-state (* num-sticks (second max-heap-sizes))))
+		(setf (second new-3d-state) num-sticks)
+	
+		(setf (first new-3d-state) current-state)
+	
+		(print (copy-tree new-3d-state)))	
+	
+)
 
 (defun learn-3-nim (heap-sizes gamma alpha-func num-iterations)
   "Returns a q-table after learning how to play nim"
@@ -472,22 +451,26 @@ them wins.  Reports the winner."
 
 ;;get-state-from-stacks (max-heap-sizes heap-sizes)
 ;;(defun calculate-3d-from-1d (current-state max-heap-sizes)
-(let ((one-d-state 0) (three-d-state '(3 3 3)))
-	(print (setf one-d-state (get-state-from-stacks '(2 2 2) three-d-state)))
-	(print (setf three-d-sttate (calculate-3d-from-1d one-d-state '(3 3 3))))
+(let ((one-d-state 0) (three-d-state '(2 2 2)))
+	(print "2 2 2 in one d")
+	(print (setf one-d-state (get-state-from-stacks '(3 3 3) three-d-state)))
+	(print "previous thing in 3d")
+	(print (setf three-d-state (calculate-3d-from-1d one-d-state '(3 3 3))))
 	(print "END")
 	;;(defun calculate-new-state (current-state action max-heap-sizes)
-	(dotimes (i 9)	
-		(print (calculate-3d-from-1d (calculate-new-state one-d-state i '(3 3 3)) '(3 3 3))) 
-	)
+	;;(dotimes (i 9)	
+	;;	(print (calculate-3d-from-1d (calculate-new-state one-d-state i '(3 3 3)) '(3 3 3))) 
+	;;)
+	(print (get-state-from-stacks '(3 3 3) '(0 3 3)))
+	(print (calculate-3d-from-1d 60 '(3 3 3)))
+	(print (calculate-new-state 60 3 '(3 3 3)))
 ))
 ;;(base-assignment)
 (setf *debug* nil)
 
 (test-bin-taking)
-;;(setf *q-table* (learn-3-nim '(3 3 3) .1 #'basic-alpha 90000))
-
-;;(print *q-table*)
-;;(print (best-actions-3-nim *q-table*))
-;;(play-3-nim '(3 3 3) *q-table*)
+(setf *q-table* (learn-3-nim '(3 3 3) .1 #'basic-alpha 90000))
+(print *q-table*)
+(print (best-actions-3-nim *q-table*))
+(play-3-nim '(3 3 3) *q-table*)
 ;;(base-assignment)
